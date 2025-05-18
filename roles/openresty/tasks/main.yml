@@ -1,0 +1,39 @@
+- name: get openresty pre-requisites
+  ansible.builtin.apt:
+    name:
+      - wget
+      - gnupg
+      - ca-certificates
+      - lsb-release
+    install_recommends: false
+    update_cache: true
+
+- name: add openresty repository
+  block:
+    - name: get key
+      ansible.builtin.get_url:
+        url: https://openresty.org/package/pubkey.gpg
+        dest: /usr/share/keyrings/openresty
+
+    - name: dearmor key
+      ansible.builtin.command:
+        cmd: gpg --dearmor /usr/share/keyrings/openresty
+        creates: /usr/share/keyrings/openresty.gpg
+
+    - name: add openresty apt repository
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64 signed-by=/usr/share/keyrings/openresty.gpg] http://openresty.org/package/ubuntu {{ ansible_lsb.codename }} main
+        state: present
+        update_cache: true
+
+- name: install openresty
+  ansible.builtin.apt:
+    name: openresty
+    install_recommends: false
+    update_cache: true
+
+- name: Start and enable OpenResty
+  ansible.builtin.systemd:
+    name: openresty
+    state: restarted
+    enabled: yes

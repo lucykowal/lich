@@ -1,4 +1,4 @@
-- name: bootstrap server
+- name: check server connection
   remote_user: root
   hosts: hcloud
   tasks:

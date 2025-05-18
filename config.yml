@@ -1,0 +1,4 @@
+microk8s_addons:
+  - dns
+  - hostpath-storage
+  - ingress
