@@ -32,7 +32,68 @@
     install_recommends: false
     update_cache: true
 
-- name: Start and enable OpenResty
+
+- name: create openresty config directory
+  ansible.builtin.file:
+    path: /etc/openresty/conf.d
+    state: directory
+    mode: "0755"
+
+- name: configure openresty
+  ansible.builtin.copy:
+    content: |
+      user www-data;
+      worker_processes auto;
+
+      events {
+        worker_connections 1024;
+      }
+
+      http {
+        include /etc/openresty/mime.types;
+        default_type application/octet-stream;
+
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        gzip on;
+
+        include /etc/openresty/conf.d/*.conf;
+      }
+    dest: /etc/openresty/nginx.conf
+    backup: yes
+
+- name: create kubernetes proxy
+  ansible.builtin.copy:
+    content: |
+      server {
+        listen 80;
+        server_name {{ ansible_default_ipv4.address }};
+
+        location / {
+          proxy_pass http://127.0.0.1:80;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /k8s-api/ {
+            proxy_pass https://127.0.0.1:16443/;
+            proxy_ssl_verify off;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+      }
+    dest: /etc/openresty/conf.d/kubernetes.conf
+
+- name: start and enable openresty
   ansible.builtin.systemd:
     name: openresty
     state: restarted
