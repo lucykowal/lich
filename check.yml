@@ -1,0 +1,11 @@
+- name: bootstrap server
+  remote_user: root
+  hosts: hcloud
+  tasks:
+
+    - name: ping hosts
+      ansible.builtin.ping:
+
+    - name: print hello
+      ansible.builtin.debug:
+        msg: hellooo!
