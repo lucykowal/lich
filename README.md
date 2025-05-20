@@ -20,3 +20,24 @@ then, run:
 ```shell
 ansible-playbook main.yml --vault-pass-file path/to/secret
 ```
+
+additional services can be added easily via `config.yml`. for example:
+
+```yaml
+containers:
+  - subdomain: subdomain # available via subdomain.luuucyyy.net
+    image: ghcr.io/lucykowal/repo:main # image to run
+    container_port: "80" # image listens on port 80
+    host_port: "8080" # container is available via localhost:8080
+  - subdomain: another
+    image: ghcr.io/lucykowal/other:main
+    container_port: "80"
+    host_port: "8081"
+```
+
+both `subdomain` and `host_port` should be unique.
+[health](https://health.luuucyyy.net) is taken.
+
+### to-do
+
+- [ ] automatically create DNS A records for subdomains
