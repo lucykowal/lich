@@ -7,22 +7,12 @@
     - config.yml
 
   tasks:
-    - name: setup kubernetes
-      import_role:
-        name: microk8s
-      tags: [ "k8s" ]
-
     - name: setup openresty
       import_role:
         name: openresty
       tags: [ "nginx" ]
 
-    - name: setup container registry
+    - name: setup containers
       import_role:
         name: docker
       tags: [ "docker" ]
-
-    - name: deploy cv
-      import_role:
-        name: deploy
-      tags: [ "deploy" ]

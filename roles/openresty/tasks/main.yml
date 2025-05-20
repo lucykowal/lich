@@ -68,19 +68,16 @@
     dest: /etc/openresty/nginx.conf
     backup: yes
 
-- name: create kubernetes proxy
+- name: create docker proxies
   ansible.builtin.copy:
     content: |
-      upstream microk8s_ingress {
-        server 127.0.0.1:80;
-      }
-
       server {
+        server_name {{ item.subdomain }}.luuucyyy.net;
+
         listen 80;
-        server_name {{ ansible_default_ipv4.address }} luuucyyy.net *.luuucyyy.net;
 
         location / {
-          proxy_pass http://10.152.183.165:8001;
+          proxy_pass http://0.0.0.0:{{ item.host_port }}/;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -90,7 +87,28 @@
           proxy_buffering off;
         }
       }
-    dest: /etc/openresty/conf.d/kubernetes.conf
+    dest: /etc/openresty/conf.d/{{ item.subdomain }}.conf
+  loop: "{{ containers }}"
+
+- name: create health endpoint
+  ansible.builtin.copy:
+    content: |
+      server {
+        server_name health.luuucyyy.net;
+
+        listen 80;
+
+        location / {
+          default_type text/plain;
+          content_by_lua_block {
+            ngx.say("HEALTH luuucyyy.net")
+            ngx.say("=======================================")
+            ngx.say("TIME: " .. ngx.utctime() .. " UTC")
+            ngx.say("WORKERS: " .. ngx.worker.count())
+          }
+        }
+      }
+    dest: /etc/openresty/conf.d/health.conf
 
 - name: start and enable openresty
   ansible.builtin.systemd:
