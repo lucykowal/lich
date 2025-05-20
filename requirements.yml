@@ -2,4 +2,3 @@ collections:
   - name: hetzner.hcloud
   - name: community.general
   - name: community.docker
-  - name: kubernetes.core
