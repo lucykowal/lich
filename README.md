@@ -41,3 +41,4 @@ both `subdomain` and `host_port` should be unique.
 ### to-do
 
 - [ ] automatically create DNS A records for subdomains
+- [ ] use github action to run playbook on merge
