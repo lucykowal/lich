@@ -19,12 +19,13 @@
 
 - name: deploy containers
   community.docker.docker_container:
-    name: cv
-    image: ghcr.io/lucykowal/cv:main
+    name: "{{ item.subdomain }}"
+    image: "{{ item.image }}"
     pull: true
     state: started
     recreate: true
     exposed_ports: 
-      - "80"
+      - "{{ item.container_port }}"
     published_ports:
-      - 8080:80
+      - "{{ item.host_port }}:{{ item.container_port }}"
+  loop: "{{ containers }}"

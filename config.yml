@@ -1,7 +1,8 @@
-microk8s_addons:
-  - dns
-  - hostpath-storage
-  - ingress
+containers:
+  - subdomain: cv
+    image: ghcr.io/lucykowal/cv:main
+    container_port: "80"
+    host_port: "8080"
 
 vault_github_username: !vault |
           $ANSIBLE_VAULT;1.1;AES256
