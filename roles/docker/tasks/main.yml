@@ -1,0 +1,41 @@
+- name: install snap
+  ansible.builtin.apt:
+    name: snapd
+    state: present
+
+- name: install docker
+  community.general.snap:
+    name: docker
+    state: present
+
+- name: set up container registry
+  block:
+    - name: log in to docker
+      community.docker.docker_login:
+        registry: ghcr.io
+        username: "{{ github_username }}"
+        password: "{{ github_token }}"
+      vars:
+        github_username: "{{ vault_github_username }}"
+        github_token: "{{ vault_github_token }}"
+
+    - name: create containerd config directory for ghcr.io
+      ansible.builtin.file:
+        path: /var/snap/microk8s/current/args/certs.d/ghcr.io
+        state: directory
+        mode: '0755'
+      become: true
+
+    - name: copy Docker auth config to containerd
+      ansible.builtin.copy:
+        src: /root/snap/docker/3064/.docker/config.json
+        dest: /var/snap/microk8s/current/args/certs.d/ghcr.io/config.json
+        remote_src: yes
+        mode: '0644'
+      become: true
+
+    - name: restart containerd
+      ansible.builtin.systemd:
+        name: snap.microk8s.daemon-containerd
+        state: restarted
+      become: true

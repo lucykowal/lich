@@ -16,3 +16,13 @@
       import_role:
         name: openresty
       tags: [ "nginx" ]
+
+    - name: setup container registry
+      import_role:
+        name: docker
+      tags: [ "docker" ]
+
+    - name: deploy cv
+      import_role:
+        name: deploy
+      tags: [ "deploy" ]
