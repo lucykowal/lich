@@ -3,7 +3,7 @@ containers:
     image: ghcr.io/lucykowal/cv:main
     container_port: "80"
     host_port: "8080"
-  - subdomain: "*"
+  - subdomain: false
     image: ghcr.io/lucykowal/blog:main
     container_port: "80"
     host_port: "8080"

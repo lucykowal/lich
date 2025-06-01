@@ -72,7 +72,11 @@
   ansible.builtin.copy:
     content: |
       server {
+        {% if item.subdomain -%}
         server_name {{ item.subdomain }}.luuucyyy.net;
+        {%- else -%}
+        server_name luuucyyy.net;
+        {%- endif %}
 
         listen 80;
 

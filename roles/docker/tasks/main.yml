@@ -19,7 +19,12 @@
 
 - name: deploy containers
   community.docker.docker_container:
-    name: "{{ item.subdomain }}"
+    name: |
+      {% if item.subdomain -%}
+      {{ item.subdomain }}
+      {%- else -%}
+      luuucyyy
+      {%- endif %}
     image: "{{ item.image }}"
     pull: true
     state: started
