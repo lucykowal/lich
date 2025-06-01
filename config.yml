@@ -1,10 +1,12 @@
 containers:
   - subdomain: cv
     image: ghcr.io/lucykowal/cv:main
+    name: cv
     container_port: "80"
-    host_port: "8080"
+    host_port: "8081"
   - subdomain: false
     image: ghcr.io/lucykowal/blog:main
+    name: blog
     container_port: "80"
     host_port: "8080"
 
