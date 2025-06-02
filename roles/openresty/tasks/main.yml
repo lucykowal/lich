@@ -119,6 +119,7 @@
         tcp_nodelay on;
         keepalive_timeout 65;
         gzip on;
+        gzip_types text/html text/css text/javascript application/javascript;
 
         include /etc/openresty/conf.d/*.conf;
       }
