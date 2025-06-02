@@ -99,7 +99,7 @@
         init_by_lua_block {
               require("resty.acme.autossl").init({
                 tos_accepted = true,
-                staging = false
+                staging = false,
                 account_key_path = "/etc/openresty/account.key",
                 account_email = "{{ email }}",
                 domain_whitelist = { "luuucyyy.net", "*.luuucyyy.net" },
