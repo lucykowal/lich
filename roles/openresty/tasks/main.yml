@@ -4,7 +4,6 @@
       - wget
       - gnupg
       - ca-certificates
-      - certbot
       - lsb-release
     install_recommends: false
     update_cache: true
@@ -39,23 +38,6 @@
     path: /etc/openresty/conf.d
     state: directory
     mode: "0755"
-
-- name: stop openresty
-  ansible.builtin.systemd:
-    name: openresty
-    state: stopped
-
-- name: create certificate
-  ansible.builtin.command:
-    cmd: >
-      certbot certonly --standalone --noninteractive
-      --agree-tos --email {{ email }}
-      -d luuucyyy.net -d *.luuucyyy.net
-    creates:
-      - /etc/letsencrypt/live/luuucyyy.net/fullchain.pem
-      - /etc/letsencrypt/live/luuucyyy.net/privkey.pem
-  vars:
-    email: "{{ vault_certbot_email }}"
 
 - name: configure openresty
   ansible.builtin.copy:
