@@ -4,6 +4,7 @@
       - wget
       - gnupg
       - ca-certificates
+      - luarocks
       - lsb-release
     install_recommends: false
     update_cache: true
@@ -32,6 +33,42 @@
     install_recommends: false
     update_cache: true
 
+- name: install lua-resty-acme
+  ansible.builtin.command:
+    cmd: luarocks install lua-resty-acme
+    creates: /usr/local/lib/luarocks/rocks/lua-resty-acme/*/*.rockspec
+
+- name: install luafielsystem
+  ansible.builtin.command:
+    cmd: luarocks install luafilesystem
+    creates: /usr/local/lib/luarocks/rocks/luafilesystem/*/*.rockspec
+
+- name: create account key
+  ansible.builtin.command:
+    cmd: openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out /etc/openresty/account.key
+    creates: /etc/openresty/account.key
+
+- name: create fallback keys
+  ansible.builtin.expect:
+    command: openssl req -newkey rsa:2048 -nodes -keyout /etc/openresty/default.key -x509 -days 365 -out /etc/openresty/default.pem
+    responses:
+      "Country Name.*":
+        - US
+      "State.*":
+        - Washington
+      "Locality.*":
+        - Seattle
+      "Organization Name.*":
+        - .
+      "Organizational.*":
+        - .
+      "Common Name.*":
+        - Lucy Kowal
+      "Email.*":
+        - "{{ email }}"
+    creates: /etc/openresty/default.key
+  vars:
+    email: "{{ vault_certbot_email }}"
 
 - name: create openresty config directory
   ansible.builtin.file:
@@ -53,6 +90,26 @@
         include /etc/openresty/mime.types;
         default_type application/octet-stream;
 
+        lua_shared_dict acme 16m;
+        lua_shared_dict challenge 16m;
+
+        lua_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        lua_ssl_verify_depth 2;
+
+        init_by_lua_block {
+              require("resty.acme.autossl").init({
+                tos_accepted = true,
+                staging = false
+                account_key_path = "/etc/openresty/account.key",
+                account_email = "{{ email }}",
+                domain_whitelist = { "luuucyyy.net", "*.luuucyyy.net" },
+            })
+        }
+
+        init_worker_by_lua_block {
+            require("resty.acme.autossl").init_worker()
+        }
+
         log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
                           '$status $body_bytes_sent "$http_referer" '
                           '"$http_user_agent" "$http_x_forwarded_for"';
@@ -67,6 +124,8 @@
       }
     dest: /etc/openresty/nginx.conf
     backup: yes
+  vars:
+    email: "{{ vault_certbot_email }}"
 
 - name: create docker proxies
   ansible.builtin.copy:
@@ -79,6 +138,20 @@
         {%- endif %}
 
         listen 80;
+        listen 443 ssl;
+
+        ssl_certificate /etc/openresty/default.pem;
+        ssl_certificate_key /etc/openresty/default.key;
+
+        ssl_certificate_by_lua_block {
+          require("resty.acme.autossl").ssl_certificate()
+        }
+
+        location /.well-known {
+            content_by_lua_block {
+                require("resty.acme.autossl").serve_http_challenge()
+            }
+        }
 
         location / {
           proxy_pass http://0.0.0.0:{{ item.host_port }}/;
@@ -101,6 +174,20 @@
         server_name health.luuucyyy.net;
 
         listen 80;
+        listen 443 ssl;
+
+        ssl_certificate /etc/openresty/default.pem;
+        ssl_certificate_key /etc/openresty/default.key;
+
+        ssl_certificate_by_lua_block {
+          require("resty.acme.autossl").ssl_certificate()
+        }
+
+        location /.well-known {
+            content_by_lua_block {
+                require("resty.acme.autossl").serve_http_challenge()
+            }
+        }
 
         location / {
           default_type text/plain;
