@@ -24,6 +24,8 @@
     pull: true
     state: started
     recreate: true
+    restart: true
+    restart_policy: always
     exposed_ports: 
       - "{{ item.container_port }}"
     published_ports:
