@@ -168,6 +168,25 @@
     dest: /etc/openresty/conf.d/{{ item.subdomain }}.conf
   loop: "{{ containers }}"
 
+- name: create docker status script
+  ansible.builtin.copy:
+    content: |
+      #!/bin/bash
+      OUTPUT_FILE="/tmp/docker_status.txt"
+      chmod +r "$OUTPUT_FILE"
+      /snap/bin/docker ps --format "{{ '{{' }}.Names{{ '}}' }}: {{ '{{' }}.Status{{ '}}' }}" > "$OUTPUT_FILE" 2>&1
+      if [ $? -ne 0 ]; then
+                  echo "ERROR: Failed to run 'docker ps'. Is Docker daemon running and accessible?" > "$OUTPUT_FILE"
+      fi
+    dest: /usr/local/bin/update_docker_status.sh
+    mode: '777'
+
+- name: create docker health cronjob
+  ansible.builtin.cron:
+    name: docker ps
+    minute: "*/2"
+    job: /usr/local/bin/update_docker_status.sh
+
 - name: create health endpoint
   ansible.builtin.copy:
     content: |
@@ -193,10 +212,31 @@
         location / {
           default_type text/plain;
           content_by_lua_block {
-            ngx.say("HEALTH luuucyyy.net")
+            local function read_file(path)
+               local file = io.open(path, "r")
+               if file then
+                 local content = file:read("*all")
+                 file:close()
+                 return content
+               else
+                 return nil, "Failed to open file: " .. path
+               end
+            end
+            local docker_status_file = "/tmp/docker_status.txt"
+            local docker_data, err = read_file(docker_status_file)
+
+            ngx.say("NGINX STATUS")
             ngx.say("=======================================")
             ngx.say("TIME: " .. ngx.utctime() .. " UTC")
             ngx.say("WORKERS: " .. ngx.worker.count())
+
+            if docker_data then
+              ngx.say("\nDOCKER STATUS")
+              ngx.say("=======================================")
+              ngx.say(docker_data)
+            else
+              ngx.say("ERROR: Could not read Docker status file: " .. err)
+            end
           }
         }
       }
