@@ -1,0 +1,13 @@
+- name: install snap
+  ansible.builtin.apt:
+    name: snapd
+    state: present
+
+- name: get tailscale
+  community.general.snap:
+    name: tailscale
+    state: present
+
+- name: start tailscale
+  ansible.builtin.command:
+    cmd: tailscale up --auth-key={{ vault_tailscale_key }} --advertise-exit-node

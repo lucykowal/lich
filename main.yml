@@ -7,6 +7,11 @@
     - config.yml
 
   tasks:
+    - name: setup tailscale
+      import_role:
+        name: tailscale
+      tags: [ "tailscale" ]
+
     - name: setup openresty
       import_role:
         name: openresty
